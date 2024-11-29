@@ -89,9 +89,7 @@
     <title>PoC Uprizon - Déclenchement journey sur call API</title>
 </head>
 <body>
-    <br><h1>PoC Uprizon - Déclenchement journey sur call API</h1><br>
-    <p>Notes :<br>
-    - Demander un accès <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank">https://cors-anywhere.herokuapp.com/corsdemo</a> pour passer par un proxy pour que le call API fonctionne</p>
+    <br><h1>PoC Uprizon - Déclenchement journey sur call API -v.NoCORS</h1><br>
     <form id="journey-form">
         <!-- Instance Configuration -->
         <label for="instanceId">Base URI :</label>
@@ -121,8 +119,6 @@
     </form>
 
     <script>
-        const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
-
         document.getElementById("trigger-journey").addEventListener("click", async () => {
             try {
                 // Get form input values
@@ -144,7 +140,7 @@
                 const eventURL = `https://${instanceId}.rest.marketingcloudapis.com/interaction/v1/events`;
 
                 // Authenticate with Marketing Cloud
-                const authResponse = await fetch(`${CORS_PROXY}${authURL}`, {
+                const authResponse = await fetch(authURL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -162,19 +158,8 @@
 
                 const accessToken = authData.access_token;
 
-                // Log payload for debugging
-                console.log("Sending payload:", {
-                    ContactKey: contactKey,
-                    EventDefinitionKey: eventKey,
-                    Data: {
-                        Id: contactKey,
-                        Email: email,
-                        Trigger: triggerData || null,
-                    },
-                });
-
                 // Trigger Journey
-                const journeyResponse = await fetch(`${CORS_PROXY}${eventURL}`, {
+                const journeyResponse = await fetch(eventURL, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
