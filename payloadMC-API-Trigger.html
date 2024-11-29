@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 50px; /* Space at the top */
+    }
+
+    h1 {
+        text-align: center;
+        color: #4CAF50;
+        margin-bottom: 20px;
+    }
+
+    form {
+        background: #fff;
+        padding: 20px 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+    }
+
+    label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 14px;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #4CAF50;
+        box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: #fff;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    button:active {
+        background-color: #3e8e41;
+    }
+
+    @media (max-width: 480px) {
+        body {
+            padding: 10px;
+        }
+
+        form {
+            padding: 15px 20px;
+        }
+    }
+</style>
+
+    <title>PoC Uprizon - Déclenchement journey sur call API</title>
+</head>
+<body>
+    <br><h1>PoC Uprizon - Déclenchement journey sur call API</h1><br>
+    <p>Notes :<br>
+    - Demander un accès <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank">https://cors-anywhere.herokuapp.com/corsdemo</a> pour passer par un proxy pour que le call API fonctionne</p>
+    <form id="journey-form">
+        <!-- Instance Configuration -->
+        <label for="instanceId">Base URI :</label>
+        <input type="text" id="instanceId" name="instanceId" value= "mc72qzvb65ywzjcw75k14d6lgcdq" required><br><br>
+
+        <label for="clientId">Client ID :</label>
+        <input type="text" id="clientId" name="clientId" value="rdfkoixpch6wa6fee2zkuszu" required><br><br>
+
+        <label for="clientSecret">Client Secret :</label>
+        <input type="password" id="clientSecret" name="clientSecret" required><br><br>
+
+        <!-- Event Configuration -->
+        <label for="eventKey">Event Key :</label>
+        <input type="text" id="eventKey" name="eventKey" value="APIEvent-ca7e408d-4a9b-87c6-1158-1500df39e15f" required><br><br>
+
+        <!-- User Data -->
+        <label for="contactKey">Contact Id :</label>
+        <input type="text" id="contactKey" name="contactKey" value="t241129010" required><br><br>
+
+        <label for="email">Email :</label>
+        <input type="email" id="email" name="email" value="julien.brulland+t241129010@uprizon.com" required><br><br>
+
+        <label for="triggerData">Trigger Data :<br>(optionnel)</label>
+        <input type="text" id="triggerData" value="FAQ_lien_resiliation" name="triggerData"><br><br>
+
+        <button type="button" id="trigger-journey">Envoyer le payload</button>
+    </form>
+
+    <script>
+        const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+
+        document.getElementById("trigger-journey").addEventListener("click", async () => {
+            try {
+                // Get form input values
+                const instanceId = document.getElementById("instanceId").value.trim();
+                const clientId = document.getElementById("clientId").value.trim();
+                const clientSecret = document.getElementById("clientSecret").value.trim();
+                const eventKey = document.getElementById("eventKey").value.trim();
+                const contactKey = document.getElementById("contactKey").value.trim();
+                const email = document.getElementById("email").value.trim();
+                const triggerData = document.getElementById("triggerData").value.trim();
+
+                if (!instanceId || !clientId || !clientSecret || !eventKey || !contactKey || !email) {
+                    alert("Merci de remplir tous les champs");
+                    return;
+                }
+
+                // Construct URLs using the instance ID
+                const authURL = `https://${instanceId}.auth.marketingcloudapis.com/v2/token`;
+                const eventURL = `https://${instanceId}.rest.marketingcloudapis.com/interaction/v1/events`;
+
+                // Authenticate with Marketing Cloud
+                const authResponse = await fetch(`${CORS_PROXY}${authURL}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        grant_type: "client_credentials",
+                        client_id: clientId,
+                        client_secret: clientSecret,
+                    }),
+                });
+
+                const authData = await authResponse.json();
+                if (!authResponse.ok) {
+                    console.error("Authentication failed:", authData);
+                    throw new Error(authData.message || "Authentication failed");
+                }
+
+                const accessToken = authData.access_token;
+
+                // Log payload for debugging
+                console.log("Sending payload:", {
+                    ContactKey: contactKey,
+                    EventDefinitionKey: eventKey,
+                    Data: {
+                        Id: contactKey,
+                        Email: email,
+                        Trigger: triggerData || null,
+                    },
+                });
+
+                // Trigger Journey
+                const journeyResponse = await fetch(`${CORS_PROXY}${eventURL}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({
+                        ContactKey: contactKey,
+                        EventDefinitionKey: eventKey,
+                        Data: {
+                            Id: contactKey,
+                            Email: email,
+	                        Trigger: triggerData || null,
+                        },
+                    }),
+                });
+
+                const responseData = await journeyResponse.json();
+                if (!journeyResponse.ok) {
+                    console.error("Journey trigger failed:", responseData);
+                    throw new Error(responseData.message || "Erreur de déclenchement de la journey");
+                }
+
+                alert("Succès ! La journey a été déclenchée");
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Une erreur s'est produite : " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
