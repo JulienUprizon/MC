@@ -89,7 +89,9 @@
     <title>PoC Uprizon - Déclenchement journey sur call API</title>
 </head>
 <body>
-    <br><h1>PoC Uprizon - Déclenchement journey sur call API -v.NoCORS </h1><br>
+    <br><h1>PoC Uprizon - Déclenchement journey sur call API</h1><br>
+    <p>Notes :<br>
+    - Demander un accès <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank">https://cors-anywhere.herokuapp.com/corsdemo</a> pour passer par un proxy pour que le call API soit accepté. Nous passons par du javascript pour nous authentifier et réaliser la requête pour ce PoC. Cela ne sera pas utile lorsque vous utiliserez votre serveur.</p>
     <form id="journey-form">
         <!-- Instance Configuration -->
         <label for="instanceId">Base URI :</label>
@@ -107,10 +109,10 @@
 
         <!-- User Data -->
         <label for="contactKey">Contact Id :</label>
-        <input type="text" id="contactKey" name="contactKey" value="t241129010" required><br><br>
+        <input type="text" id="contactKey" name="contactKey" value="t241129012" required><br><br>
 
         <label for="email">Email :</label>
-        <input type="email" id="email" name="email" value="julien.brulland+t241129010@uprizon.com" required><br><br>
+        <input type="email" id="email" name="email" value="julien.brulland+t241129012@uprizon.com" required><br><br>
 
         <label for="triggerData">Trigger Data :<br>(optionnel)</label>
         <input type="text" id="triggerData" value="FAQ_lien_resiliation" name="triggerData"><br><br>
@@ -119,6 +121,8 @@
     </form>
 
     <script>
+        const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+
         document.getElementById("trigger-journey").addEventListener("click", async () => {
             try {
                 // Get form input values
@@ -140,7 +144,7 @@
                 const eventURL = `https://${instanceId}.rest.marketingcloudapis.com/interaction/v1/events`;
 
                 // Authenticate with Marketing Cloud
-                const authResponse = await fetch(authURL, {
+                const authResponse = await fetch(`${CORS_PROXY}${authURL}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -158,8 +162,19 @@
 
                 const accessToken = authData.access_token;
 
+                // Log payload for debugging
+                console.log("Sending payload:", {
+                    ContactKey: contactKey,
+                    EventDefinitionKey: eventKey,
+                    Data: {
+                        Id: contactKey,
+                        Email: email,
+                        Trigger: triggerData || null,
+                    },
+                });
+
                 // Trigger Journey
-                const journeyResponse = await fetch(eventURL, {
+                const journeyResponse = await fetch(`${CORS_PROXY}${eventURL}`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
